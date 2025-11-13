@@ -119,6 +119,9 @@ const actionButtons = document.querySelectorAll(".action-button");
 const xpBarEl = /** @type {HTMLDivElement} */ (document.getElementById("xpBar"));
 const levelValueEl = /** @type {HTMLSpanElement} */ (document.getElementById("levelValue"));
 const xpTextEl = /** @type {HTMLSpanElement} */ (document.getElementById("xpText"));
+const coinValueEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("coinValue")
+);
 const themeSelectEl = /** @type {HTMLSelectElement | null} */ (
   document.getElementById("themeSelect")
 );

@@ -14,21 +14,23 @@
           <h1>내 가상 친구 POU</h1>
           <p class="app__subtitle">간단한 프로토타입 · 상태를 관리하며 친구를 돌봐요</p>
         </div>
-        <div class="theme-switcher" aria-label="테마 선택">
-          <label for="themeSelect">테마</label>
-          <select id="themeSelect">
-            <option value="classic">클래식</option>
-            <option value="night" disabled>야간</option>
-            <option value="cotton" disabled>코튼캔디</option>
-          </select>
-        </div>
+      </div>
+      <div class="theme-switcher" aria-label="테마 선택">
+        <label for="themeSelect">테마</label>
+        <select id="themeSelect">
+          <option value="classic">클래식</option>
+          <option value="night" disabled>야간</option>
+          <option value="cotton" disabled>코튼캔디</option>
+        </select>
       </div>
     </header>
 
     <section class="pet-panel">
       <div class="pet">
+        <div class="pet__background"></div>
         <div class="pet__shadow"></div>
         <div class="pet__body">
+          <div class="pet__accessory pet__accessory--head"></div>
           <div class="pet__face">
             <div class="pet__eye pet__eye--left">
               <div class="pet__pupil"></div>
@@ -49,56 +51,78 @@
       <div class="mood" id="moodText">기분 최고!</div>
     </section>
 
-    <section class="status-panel">
-      <h2>상태</h2>
-      <div class="level-card">
-        <div class="level-card__info">
-          <span class="level-card__label">레벨</span>
-          <span class="level-card__value" id="levelValue">Lv. 1</span>
-        </div>
-        <div class="level-card__xp">
-          <span class="level-card__xp-text" id="xpText">0 / 120 XP</span>
-          <div class="stat__bar stat__bar--xp">
-            <div class="stat__fill stat__fill--xp" id="xpBar"></div>
+    <section class="info-tabs" aria-label="정보 및 상점">
+      <div class="info-tabs__nav" role="tablist">
+        <button type="button" class="info-tabs__button is-active" role="tab" aria-selected="true" data-tab="status">상태</button>
+        <button type="button" class="info-tabs__button" role="tab" aria-selected="false" data-tab="shop">상점</button>
+        <button type="button" class="info-tabs__button" role="tab" aria-selected="false" data-tab="inventory">장착</button>
+      </div>
+      <div class="info-tabs__panel is-active" role="tabpanel" data-panel="status">
+        <section class="status-panel">
+          <h2>상태</h2>
+          <div class="level-card">
+            <div class="level-card__info">
+              <span class="level-card__label">레벨</span>
+              <span class="level-card__value" id="levelValue">Lv. 1</span>
+            </div>
+            <div class="level-card__xp">
+              <span class="level-card__xp-text" id="xpText">0 / 120 XP</span>
+              <div class="stat__bar stat__bar--xp">
+                <div class="stat__fill stat__fill--xp" id="xpBar"></div>
+              </div>
+            </div>
+            <div class="level-card__meta">
+              <span class="level-card__meta-label">코인</span>
+              <span class="level-card__meta-value" id="coinValue">0</span>
+            </div>
+          </div>
+      <div class="status-panel__stats">
+        <div class="stat">
+          <span class="stat__label">배고픔</span>
+          <div class="stat__bar">
+            <div class="stat__fill stat__fill--hunger" id="hungerBar"></div>
           </div>
         </div>
-        <div class="level-card__meta">
-          <span class="level-card__meta-label">코인</span>
-          <span class="level-card__meta-value" id="coinValue">0</span>
+        <div class="stat">
+          <span class="stat__label">청결</span>
+          <div class="stat__bar">
+            <div class="stat__fill stat__fill--cleanliness" id="cleanlinessBar"></div>
+          </div>
+        </div>
+        <div class="stat">
+          <span class="stat__label">에너지</span>
+          <div class="stat__bar">
+            <div class="stat__fill stat__fill--energy" id="energyBar"></div>
+          </div>
+        </div>
+        <div class="stat">
+          <span class="stat__label">즐거움</span>
+          <div class="stat__bar">
+            <div class="stat__fill stat__fill--fun" id="funBar"></div>
+          </div>
         </div>
       </div>
-      <div class="stat">
-        <span class="stat__label">배고픔</span>
-        <div class="stat__bar">
-          <div class="stat__fill stat__fill--hunger" id="hungerBar"></div>
-        </div>
+         </section>
       </div>
-      <div class="stat">
-        <span class="stat__label">청결</span>
-        <div class="stat__bar">
-          <div class="stat__fill stat__fill--cleanliness" id="cleanlinessBar"></div>
-        </div>
-      </div>
-      <div class="stat">
-        <span class="stat__label">에너지</span>
-        <div class="stat__bar">
-          <div class="stat__fill stat__fill--energy" id="energyBar"></div>
-        </div>
-      </div>
-      <div class="stat">
-        <span class="stat__label">즐거움</span>
-        <div class="stat__bar">
-          <div class="stat__fill stat__fill--fun" id="funBar"></div>
-        </div>
-      </div>
-    </section>
 
-    <section class="shop-panel">
-      <div class="shop-panel__header">
-        <h2>상점</h2>
-        <span class="shop-panel__coins">보유 코인 <strong id="shopCoins">0</strong></span>
+      <div class="info-tabs__panel" role="tabpanel" data-panel="shop" hidden>
+        <section class="shop-panel">
+          <div class="shop-panel__header">
+            <h2>상점</h2>
+            <span class="shop-panel__coins">보유 코인 <strong id="shopCoins">0</strong></span>
+          </div>
+          <div class="shop-panel__list" id="shopList" aria-live="polite"></div>
+        </section>
       </div>
-      <div class="shop-panel__list" id="shopList" aria-live="polite"></div>
+
+      <div class="info-tabs__panel" role="tabpanel" data-panel="inventory" hidden>
+        <section class="inventory-panel">
+          <div class="inventory-panel__header">
+            <h2>장착</h2>
+          </div>
+          <div class="inventory-panel__slots" id="accessorySlots" aria-live="polite"></div>
+        </section>
+      </div>
     </section>
 
     <section class="action-panel" aria-label="행동 선택">
@@ -109,6 +133,71 @@
         <button type="button" class="action-button" data-action="play">놀아주기</button>
         <button type="button" class="action-button" data-action="sleep">재우기</button>
         <button type="button" class="action-button action-button--secondary" data-action="reset">초기화</button>
+      </div>
+    </section>
+
+    <section class="minigame-overlay" id="minigameOverlay" aria-hidden="true">
+      <div class="minigame">
+        <header class="minigame__header">
+          <div>
+            <h2>놀아주기 미니게임</h2>
+            <p class="minigame__subtitle">플레이 방식을 선택하고 친구와 즐거운 시간을 보내요.</p>
+          </div>
+          <button type="button" class="minigame__close" id="minigameClose" aria-label="미니게임 닫기">×</button>
+        </header>
+
+        <nav class="minigame__tabs" role="tablist" aria-label="미니게임 선택">
+          <button type="button" class="minigame__tab is-active" role="tab" aria-selected="true" data-minigame-nav="rhythm">패드 리듬</button>
+          <button type="button" class="minigame__tab" role="tab" aria-selected="false" data-minigame-nav="dodge">똥 피하기</button>
+        </nav>
+
+        <div class="minigame__panel-group">
+          <section class="minigame__panel is-active" role="tabpanel" data-minigame-panel="rhythm">
+            <p class="minigame__description">빛나는 패드를 빠르게 눌러 점수를 올려 보세요! 제한된 라운드 동안 정확하게 반응할수록 보상이 커집니다.</p>
+            <div class="minigame__status">
+              <div>라운드 <span id="minigameRound">0</span>/<span id="minigameTotal">0</span></div>
+              <div>성공 <span id="minigameHits">0</span> · 실패 <span id="minigameMisses">0</span></div>
+            </div>
+        <div class="minigame__timer" aria-label="남은 반응 시간">
+          <div class="minigame__timer-track">
+            <div class="minigame__timer-fill" id="minigameTimer"></div>
+          </div>
+          <span class="minigame__timer-text" id="minigameTimerText">1.3s</span>
+        </div>
+            <div class="minigame__pads" id="minigamePads" role="group" aria-label="리듬 패드">
+              <button type="button" class="minigame__pad" data-pad="0">1</button>
+              <button type="button" class="minigame__pad" data-pad="1">2</button>
+              <button type="button" class="minigame__pad" data-pad="2">3</button>
+              <button type="button" class="minigame__pad" data-pad="3">4</button>
+            </div>
+            <div class="minigame__controls">
+              <button type="button" class="action-button" id="minigameStart">시작</button>
+              <button type="button" class="action-button action-button--secondary" id="minigameGiveUp">그만두기</button>
+            </div>
+            <div class="minigame__progress">
+              <div class="minigame__progress-bar" id="minigameProgress"></div>
+            </div>
+          </section>
+
+          <section class="minigame__panel" role="tabpanel" data-minigame-panel="dodge" hidden>
+            <p class="minigame__description">30초 동안 떨어지는 똥을 모두 피해 살아남으세요! 방향키 또는 좌우 버튼으로 펫을 이동할 수 있어요.</p>
+            <div class="dodge-status">
+              <div>남은 시간 <strong id="dodgeTime">30.0s</strong></div>
+              <div>체력 <span id="dodgeLives" class="dodge-status__lives">♥♥♥</span></div>
+            </div>
+            <div class="dodge-game" id="dodgeGameArea" role="application" aria-label="똥 피하기 게임 영역">
+              <div class="dodge-game__player" id="dodgePlayer"></div>
+            </div>
+            <div class="dodge-controls" aria-hidden="false">
+              <button type="button" class="dodge-controls__button" id="dodgeControlLeft" aria-label="왼쪽 이동">←</button>
+              <button type="button" class="dodge-controls__button" id="dodgeControlRight" aria-label="오른쪽 이동">→</button>
+            </div>
+            <div class="minigame__controls">
+              <button type="button" class="action-button" id="dodgeStart">시작</button>
+              <button type="button" class="action-button action-button--secondary" id="dodgeGiveUp">그만두기</button>
+            </div>
+          </section>
+        </div>
       </div>
     </section>
 

@@ -30,10 +30,142 @@ const THEME_CLASS_MAP = /** @type {const} */ ({
   night: "theme--night",
   cotton: "theme--cotton",
 });
-const SHOP_ITEMS = /** @type {const} */ ([
-  { id: "theme-night", type: "theme", name: "야간 테마", price: 180, unlocksTheme: "night" },
-  { id: "theme-cotton", type: "theme", name: "코튼캔디", price: 240, unlocksTheme: "cotton" },
+const SHOP_CATEGORIES = /** @type {const} */ ([
+  { key: "theme", label: "테마" },
+  { key: "head", label: "머리 장식" },
+  { key: "background-basic", label: "배경 · 기본" },
+  { key: "background-premium", label: "배경 · 프리미엄" },
 ]);
+
+const SHOP_ITEMS = /** @type {const} */ ([
+  {
+    id: "theme-night",
+    type: "theme",
+    category: "theme",
+    name: "야간 테마",
+    price: 180,
+    unlocksTheme: "night",
+    thumbnailClass: "thumb--theme-night",
+  },
+  {
+    id: "theme-cotton",
+    type: "theme",
+    category: "theme",
+    name: "코튼캔디",
+    price: 240,
+    unlocksTheme: "cotton",
+    thumbnailClass: "thumb--theme-cotton",
+  },
+  {
+    id: "hat-star",
+    type: "accessory",
+    slot: "head",
+    category: "head",
+    name: "별 모자",
+    price: 140,
+    accessoryClass: "accessory-head--star",
+    thumbnailClass: "thumb--hat-star",
+    thumbnailEmoji: "★",
+  },
+  {
+    id: "hat-bow",
+    type: "accessory",
+    slot: "head",
+    category: "head",
+    name: "리본 모자",
+    price: 160,
+    accessoryClass: "accessory-head--bow",
+    thumbnailClass: "thumb--hat-bow",
+    thumbnailEmoji: "🎀",
+  },
+  {
+    id: "bg-sunrise",
+    type: "accessory",
+    slot: "background",
+    category: "background-basic",
+    name: "해돋이 하늘",
+    price: 140,
+    accessoryClass: "accessory-bg--sunrise",
+    thumbnailClass: "thumb--bg-sunrise",
+    thumbnailEmoji: "☀️",
+  },
+  {
+    id: "bg-forest",
+    type: "accessory",
+    slot: "background",
+    category: "background-basic",
+    name: "숲속 산책",
+    price: 160,
+    accessoryClass: "accessory-bg--forest",
+    thumbnailClass: "thumb--bg-forest",
+    thumbnailEmoji: "🌲",
+  },
+  {
+    id: "bg-coast",
+    type: "accessory",
+    slot: "background",
+    category: "background-basic",
+    name: "바닷가 휴일",
+    price: 170,
+    accessoryClass: "accessory-bg--coast",
+    thumbnailClass: "thumb--bg-coast",
+    thumbnailEmoji: "🏝️",
+  },
+  {
+    id: "bg-playroom",
+    type: "accessory",
+    slot: "background",
+    category: "background-basic",
+    name: "놀이방",
+    price: 180,
+    accessoryClass: "accessory-bg--playroom",
+    thumbnailClass: "thumb--bg-playroom",
+    thumbnailEmoji: "🧸",
+  },
+  {
+    id: "bg-space",
+    type: "accessory",
+    slot: "background",
+    category: "background-premium",
+    name: "프리미엄 우주",
+    price: 240,
+    accessoryClass: "accessory-bg--space",
+    thumbnailClass: "thumb--bg-space",
+    thumbnailEmoji: "🌌",
+  },
+  {
+    id: "bg-sakura",
+    type: "accessory",
+    slot: "background",
+    category: "background-premium",
+    name: "프리미엄 벚꽃",
+    price: 260,
+    accessoryClass: "accessory-bg--sakura",
+    thumbnailClass: "thumb--bg-sakura",
+    thumbnailEmoji: "🌸",
+  },
+]);
+const ACCESSORY_CLASS_MAP = /** @type {const} */ ({
+  head: {
+    "hat-star": "accessory-head--star",
+    "hat-bow": "accessory-head--bow",
+  },
+  background: {
+    "bg-sunrise": "accessory-bg--sunrise",
+    "bg-forest": "accessory-bg--forest",
+    "bg-coast": "accessory-bg--coast",
+    "bg-playroom": "accessory-bg--playroom",
+    "bg-space": "accessory-bg--space",
+    "bg-sakura": "accessory-bg--sakura",
+  },
+});
+const LEGACY_ACCESSORY_MAP = /** @type {const} */ ({
+  "bg-balloon": "bg-sunrise",
+});
+const ACCESSORY_SLOT_LABELS = /** @type {const} */ ({
+  head: "머리",
+  background: "배경",
+});
 const EXPRESSION_BODY_CLASSES = /** @type {const} */ ([
   "pet__body--happy",
   "pet__body--neutral",
@@ -46,6 +178,77 @@ const EXPRESSION_FACE_CLASSES = /** @type {const} */ ([
   "pet__face--tired",
   "pet__face--sad",
 ]);
+const ACTION_ANIMATION_MAP = {
+  feed: "jump",
+  clean: "shake",
+  play: "jump",
+  sleep: "jump",
+};
+
+let toastTimerId = 0;
+let rewardQueue = [];
+let currentReward = null;
+let rewardReminderTimerId = 0;
+let blinkTimerId = 0;
+let isBlinking = false;
+const rhythmGameState = {
+  isActive: false,
+  totalRounds: 8,
+  currentRound: 0,
+  hits: 0,
+  misses: 0,
+  activePad: -1,
+  respondWindowId: 0,
+  cooldownId: 0,
+  allowInput: false,
+  timerStart: 0,
+  timerDuration: 0,
+  timerFrameId: 0,
+};
+
+const MINIGAME_TYPES = Object.freeze({
+  RHYTHM: "rhythm",
+  DODGE: "dodge",
+});
+
+let activeMinigameKey = MINIGAME_TYPES.RHYTHM;
+
+const DODGE_CONFIG = Object.freeze({
+  timeLimit: 30,
+  maxLives: 3,
+  playerSpeed: 260, // px per second
+  baseSpawnInterval: 1.2, // seconds
+  minSpawnInterval: 0.45, // seconds
+  spawnAcceleration: 0.015, // seconds reduction per second
+  baseFallSpeed: 160, // px per second
+  fallAcceleration: 22, // per second
+  dropletSize: 42,
+  maxDroplets: 6,
+  clusterMin: 2,
+  clusterMax: 5,
+  clusterStagger: 90, // milliseconds between simultaneous spawns
+});
+
+const dodgeGameState = {
+  isActive: false,
+  lives: DODGE_CONFIG.maxLives,
+  timeRemaining: DODGE_CONFIG.timeLimit,
+  elapsed: 0,
+  inputDirection: 0,
+  lastTimestamp: 0,
+  spawnAccumulator: 0,
+  playerX: 0.5,
+  playerVelocity: 0,
+  droplets: [],
+  animationFrameId: 0,
+  keyDirections: new Set(),
+  startTimestamp: 0,
+  gameAreaWidth: 0,
+  gameAreaHeight: 0,
+  playerWidth: 56,
+  playerHeight: 56,
+  spawnTimeouts: [],
+};
 
 // 로컬 스토리지 키
 const STORAGE_KEY = "webPouPrototypeState";
@@ -121,7 +324,7 @@ const barElements = {
 };
 
 const moodTextEl = /** @type {HTMLDivElement} */ (document.getElementById("moodText"));
-const actionButtons = document.querySelectorAll(".action-button");
+const actionButtons = document.querySelectorAll("[data-action]");
 const xpBarEl = /** @type {HTMLDivElement} */ (document.getElementById("xpBar"));
 const levelValueEl = /** @type {HTMLSpanElement} */ (document.getElementById("levelValue"));
 const xpTextEl = /** @type {HTMLSpanElement} */ (document.getElementById("xpText"));
@@ -133,8 +336,89 @@ const themeSelectEl = /** @type {HTMLSelectElement | null} */ (
 );
 const shopListEl = /** @type {HTMLDivElement | null} */ (document.getElementById("shopList"));
 const shopCoinsEl = /** @type {HTMLSpanElement | null} */ (document.getElementById("shopCoins"));
+const accessorySlotsEl = /** @type {HTMLDivElement | null} */ (document.getElementById("accessorySlots"));
+const infoTabsEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".info-tabs"));
+const infoTabButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (
+  document.querySelectorAll(".info-tabs__button")
+);
+const infoTabPanels = /** @type {NodeListOf<HTMLDivElement>} */ (
+  document.querySelectorAll(".info-tabs__panel")
+);
+const TAB_STORAGE_KEY = "webPouActiveTab";
+const minigameOverlayEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("minigameOverlay")
+);
+const minigameTabButtons = /** @type {NodeListOf<HTMLButtonElement>} */ (
+  document.querySelectorAll(".minigame__tab")
+);
+const minigamePanels = /** @type {NodeListOf<HTMLElement>} */ (
+  document.querySelectorAll(".minigame__panel")
+);
+const minigamePadsEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("minigamePads")
+);
+const minigameStartBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("minigameStart")
+);
+const minigameGiveUpBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("minigameGiveUp")
+);
+const minigameCloseBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("minigameClose")
+);
+const minigameRoundEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("minigameRound")
+);
+const minigameTotalEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("minigameTotal")
+);
+const minigameHitsEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("minigameHits")
+);
+const minigameMissesEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("minigameMisses")
+);
+const minigameProgressEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("minigameProgress")
+);
+const minigameTimerFillEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("minigameTimer")
+);
+const minigameTimerTextEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("minigameTimerText")
+);
+const dodgeTimeEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("dodgeTime")
+);
+const dodgeLivesEl = /** @type {HTMLSpanElement | null} */ (
+  document.getElementById("dodgeLives")
+);
+const dodgeGameAreaEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("dodgeGameArea")
+);
+const dodgePlayerEl = /** @type {HTMLDivElement | null} */ (
+  document.getElementById("dodgePlayer")
+);
+const dodgeStartBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("dodgeStart")
+);
+const dodgeGiveUpBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("dodgeGiveUp")
+);
+const dodgeControlLeftBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("dodgeControlLeft")
+);
+const dodgeControlRightBtn = /** @type {HTMLButtonElement | null} */ (
+  document.getElementById("dodgeControlRight")
+);
 const petFaceEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__face"));
 const petBodyEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__body"));
+const accessoryHeadEl = /** @type {HTMLDivElement | null} */ (
+  document.querySelector(".pet__accessory--head")
+);
+const accessoryBackgroundEl = /** @type {HTMLDivElement | null} */ (
+  document.querySelector(".pet__background")
+);
 const levelCardEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".level-card"));
 const toastEl = /** @type {HTMLDivElement | null} */ (document.getElementById("toast"));
 
@@ -215,20 +499,6 @@ class AudioManager {
 }
 
 const audioManager = new AudioManager();
-let rewardQueue = [];
-let currentReward = null;
-let rewardReminderTimerId = 0;
-let blinkTimerId = 0;
-let isBlinking = false;
-
-// UI 초기화
-applyThemeClass(currentTheme);
-syncUI();
-bindEvents();
-initializeThemeSelector();
-startDecayLoop();
-initializeRewardSystem();
-startIdleAnimations();
 
 /**
  * UI와 상태를 동기화
@@ -288,7 +558,78 @@ function syncInventoryUI() {
   if (shopCoinsEl) {
     shopCoinsEl.textContent = Math.max(0, Math.floor(petState.coins)).toLocaleString("ko-KR");
   }
+  applyEquippedAccessories();
+  updateThemeSelectOptions();
+  renderAccessorySlots();
   renderShopItems();
+}
+
+function renderAccessorySlots() {
+  if (!accessorySlotsEl) {
+    return;
+  }
+  const slots = Object.keys(ACCESSORY_SLOT_LABELS);
+  accessorySlotsEl.innerHTML = "";
+
+  slots.forEach((slotKey) => {
+    const slotLabel = ACCESSORY_SLOT_LABELS[slotKey];
+    const wrapper = document.createElement("div");
+    wrapper.className = "inventory-slot";
+
+    const header = document.createElement("div");
+    header.className = "inventory-slot__title";
+    const title = document.createElement("span");
+    title.textContent = slotLabel;
+    const equippedText = document.createElement("span");
+    equippedText.className = "inventory-slot__equipped";
+    const equippedId = inventoryState.equipped[slotKey];
+    if (equippedId) {
+      const item = SHOP_ITEMS.find((shopItem) => shopItem.id === equippedId);
+      equippedText.textContent = item ? `장착 중: ${item.name}` : "장착 중";
+    } else {
+      equippedText.textContent = "장착 없음";
+    }
+    header.appendChild(title);
+    header.appendChild(equippedText);
+
+    const itemList = document.createElement("div");
+    itemList.className = "inventory-slot__items";
+
+    inventoryState.ownedAccessories
+      .map((ownedId) => SHOP_ITEMS.find((shopItem) => shopItem.id === ownedId && shopItem.slot === slotKey))
+      .filter(Boolean)
+      .forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "inventory-item-button";
+        button.textContent = item.name;
+        const isEquipped = inventoryState.equipped[slotKey] === item.id;
+        if (isEquipped) {
+          button.classList.add("is-active");
+          button.setAttribute("aria-pressed", "true");
+        }
+        button.addEventListener("click", () => {
+          if (isEquipped) {
+            unequipAccessory(slotKey);
+          } else {
+            equipAccessory(item);
+          }
+        });
+        itemList.appendChild(button);
+      });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "inventory-item-button inventory-item-button--remove";
+    removeBtn.textContent = "해제";
+    removeBtn.disabled = !inventoryState.equipped[slotKey];
+    removeBtn.addEventListener("click", () => unequipAccessory(slotKey));
+    itemList.appendChild(removeBtn);
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(itemList);
+    accessorySlotsEl.appendChild(wrapper);
+  });
 }
 
 function renderShopItems() {
@@ -296,53 +637,142 @@ function renderShopItems() {
     return;
   }
   shopListEl.innerHTML = "";
-  SHOP_ITEMS.forEach((item) => {
-    const isTheme = item.type === "theme";
-    const alreadyOwned = isItemOwned(item);
-    const canAfford = petState.coins >= item.price;
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "shop-item";
+  SHOP_CATEGORIES.forEach((category) => {
+    const categoryItems = SHOP_ITEMS.filter((item) => item.category === category.key);
+    if (categoryItems.length === 0) {
+      return;
+    }
 
-    const info = document.createElement("div");
-    info.className = "shop-item__info";
-    const title = document.createElement("div");
-    title.className = "shop-item__name";
-    title.textContent = item.name;
-    const price = document.createElement("div");
-    price.className = "shop-item__price";
-    price.innerHTML = `가격 <strong>${item.price.toLocaleString("ko-KR")}</strong>`;
-    info.appendChild(title);
-    info.appendChild(price);
+    const section = document.createElement("section");
+    section.className = "shop-category";
 
-    const actions = document.createElement("div");
-    actions.className = "shop-item__actions";
+    const title = document.createElement("h3");
+    title.className = "shop-category__title";
+    title.textContent = category.label;
+    section.appendChild(title);
 
-    if (alreadyOwned) {
-      const status = document.createElement("span");
-      status.className = "shop-item__status";
-      status.textContent = "보유 중";
+    const grid = document.createElement("div");
+    grid.className = "shop-category__grid";
+
+    categoryItems.forEach((item) => {
+      grid.appendChild(createShopItemCard(item));
+    });
+
+    section.appendChild(grid);
+    shopListEl.appendChild(section);
+  });
+}
+
+function createShopItemCard(item) {
+  const isTheme = item.type === "theme";
+  const isAccessory = item.type === "accessory";
+  const alreadyOwned = isItemOwned(item);
+  const canAfford = petState.coins >= item.price;
+
+  const wrapper = document.createElement("article");
+  wrapper.className = "shop-item";
+
+  const body = document.createElement("div");
+  body.className = "shop-item__body";
+
+  const thumb = document.createElement("div");
+  thumb.className = `shop-item__thumb ${item.thumbnailClass ?? ""}`;
+  if (item.thumbnailEmoji) {
+    const emoji = document.createElement("span");
+    emoji.className = "shop-item__thumb-emoji";
+    emoji.textContent = item.thumbnailEmoji;
+    thumb.appendChild(emoji);
+  }
+  body.appendChild(thumb);
+
+  const info = document.createElement("div");
+  info.className = "shop-item__info";
+
+  const title = document.createElement("div");
+  title.className = "shop-item__name";
+  title.textContent = item.name;
+  info.appendChild(title);
+
+  const price = document.createElement("div");
+  price.className = "shop-item__price";
+  const priceText = `가격 <strong>${item.price.toLocaleString("ko-KR")}</strong>`;
+  if (isAccessory && item.slot) {
+    const slotLabel = ACCESSORY_SLOT_LABELS[item.slot] ?? "";
+    price.innerHTML = `${priceText} <span class="shop-item__slot">슬롯: ${slotLabel}</span>`;
+  } else {
+    price.innerHTML = priceText;
+  }
+  info.appendChild(price);
+
+  if (isTheme) {
+    const description = document.createElement("div");
+    description.className = "shop-item__description";
+    description.textContent = "앱 전체 색감을 변경해요.";
+    info.appendChild(description);
+  } else if (isAccessory && item.slot === "background") {
+    const description = document.createElement("div");
+    description.className = "shop-item__description";
+    description.textContent = "펫이 있는 공간의 분위기를 바꿔요.";
+    info.appendChild(description);
+  }
+
+  body.appendChild(info);
+  wrapper.appendChild(body);
+
+  const actions = document.createElement("div");
+  actions.className = "shop-item__actions";
+
+  if (!alreadyOwned) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "action-button";
+    button.textContent = "구매";
+    button.disabled = !canAfford;
+    if (!canAfford) {
+      button.classList.add("action-button--secondary");
+      button.textContent = "코인 부족";
+    }
+    button.addEventListener("click", () => {
+      handlePurchase(item);
+    });
+    actions.appendChild(button);
+  } else if (isAccessory && item.slot) {
+    const status = document.createElement("span");
+    status.className = "shop-item__status";
+    const equippedId = inventoryState.equipped[item.slot];
+    if (equippedId === item.id) {
+      status.textContent = "장착 중";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button action-button--secondary";
+      button.textContent = "해제";
+      button.addEventListener("click", () => {
+        unequipAccessory(item.slot);
+      });
       actions.appendChild(status);
+      actions.appendChild(button);
     } else {
+      status.textContent = "보유 중";
       const button = document.createElement("button");
       button.type = "button";
       button.className = "action-button";
-      button.textContent = "구매";
-      button.disabled = !canAfford;
-      if (!canAfford) {
-        button.classList.add("action-button--secondary");
-        button.textContent = "코인 부족";
-      }
+      button.textContent = "장착";
       button.addEventListener("click", () => {
-        handlePurchase(item);
+        equipAccessory(item);
       });
+      actions.appendChild(status);
       actions.appendChild(button);
     }
+  } else {
+    const status = document.createElement("span");
+    status.className = "shop-item__status";
+    status.textContent = "보유 중";
+    actions.appendChild(status);
+  }
 
-    wrapper.appendChild(info);
-    wrapper.appendChild(actions);
-    shopListEl.appendChild(wrapper);
-  });
+  wrapper.appendChild(actions);
+  return wrapper;
 }
 
 function handlePurchase(item) {
@@ -364,16 +794,20 @@ function handlePurchase(item) {
     if (!inventoryState.ownedThemes.includes(item.unlocksTheme)) {
       inventoryState.ownedThemes.push(item.unlocksTheme);
     }
-    // 테마 옵션이 잠금 해제되었다면 즉시 해당 테마 적용 가능
-    if (themeSelectEl) {
-      const option = themeSelectEl.querySelector(`option[value="${item.unlocksTheme}"]`);
-      if (option) {
-        option.disabled = false;
-      }
-    }
+    updateThemeSelectOptions();
     showToastMessage({
       title: `${item.name} 획득!`,
       description: "테마 선택에서 적용해 보세요.",
+      autoHide: true,
+      duration: 2200,
+    });
+  } else if (item.type === "accessory") {
+    if (!inventoryState.ownedAccessories.includes(item.id)) {
+      inventoryState.ownedAccessories.push(item.id);
+    }
+    showToastMessage({
+      title: `${item.name} 획득!`,
+      description: "장착 버튼으로 적용해 보세요.",
       autoHide: true,
       duration: 2200,
     });
@@ -389,6 +823,9 @@ function isItemOwned(item) {
   if (item.type === "theme" && item.unlocksTheme) {
     return inventoryState.ownedThemes.includes(item.unlocksTheme);
   }
+  if (item.type === "accessory") {
+    return inventoryState.ownedAccessories.includes(item.id);
+  }
   return false;
 }
 
@@ -396,21 +833,78 @@ function isItemOwned(item) {
  * 버튼 이벤트 묶기
  */
 function bindEvents() {
+  if (!actionButtons) {
+    return;
+  }
   actionButtons.forEach((button) => {
     button.addEventListener("click", () => {
       const action = button.dataset.action;
       if (!action) {
         return;
       }
-
+      if (action === "play") {
+        openMinigame();
+        return;
+      }
       if (action === "reset") {
         resetState();
+        showToastMessage("상태가 초기화되었습니다.");
+        triggerPetAnimation("jump");
         return;
       }
 
       applyAction(action);
     });
   });
+
+  minigamePadsEl?.addEventListener("click", (event) => {
+    const target = /** @type {HTMLElement} */ (event.target);
+    if (!target || !target.dataset.pad) {
+      return;
+    }
+    handleRhythmPadInput(Number.parseInt(target.dataset.pad, 10));
+  });
+
+  minigameStartBtn?.addEventListener("click", () => {
+    startRhythmGame();
+  });
+
+  minigameGiveUpBtn?.addEventListener("click", () => {
+    if (rhythmGameState.isActive) {
+      endRhythmGame(false, { showMessage: true });
+    }
+    closeMinigame();
+  });
+
+  minigameCloseBtn?.addEventListener("click", () => {
+    stopActiveMinigame();
+    closeMinigame();
+  });
+
+  dodgeStartBtn?.addEventListener("click", () => {
+    startDodgeGame();
+  });
+
+  dodgeGiveUpBtn?.addEventListener("click", () => {
+    if (dodgeGameState.isActive) {
+      endDodgeGame(false, { showMessage: true });
+    }
+  });
+
+  const handleControlPointer = (direction) => (event) => {
+    event.preventDefault();
+    if (!dodgeGameState.isActive) {
+      return;
+    }
+    setDodgeInputDirection(direction);
+  };
+
+  ["pointerup", "pointerleave", "pointercancel"].forEach((type) => {
+    dodgeControlLeftBtn?.addEventListener(type, handleControlPointer(0));
+    dodgeControlRightBtn?.addEventListener(type, handleControlPointer(0));
+  });
+  dodgeControlLeftBtn?.addEventListener("pointerdown", handleControlPointer(-1));
+  dodgeControlRightBtn?.addEventListener("pointerdown", handleControlPointer(1));
 }
 
 /**
@@ -468,6 +962,12 @@ function resetState() {
   window.clearTimeout(blinkTimerId);
   isBlinking = false;
   hideToast();
+  inventoryState = {
+    ownedThemes: ["classic"],
+    ownedAccessories: [],
+    equipped: { head: null, background: null },
+  };
+  persistInventory();
   persistState();
   syncUI();
   scheduleRewardProcessing();
@@ -556,19 +1056,26 @@ function updateExpressionState(average) {
 
 function initializeThemeSelector() {
   if (themeSelectEl) {
-    Array.from(themeSelectEl.options).forEach((option) => {
-      if (option.value === "classic") {
-        option.disabled = false;
-        return;
-      }
-      option.disabled = !inventoryState.ownedThemes.includes(option.value);
-    });
+    updateThemeSelectOptions();
     themeSelectEl.value = currentTheme;
     themeSelectEl.addEventListener("change", (event) => {
       const target = /** @type {HTMLSelectElement} */ (event.target);
       changeTheme(target.value);
     });
   }
+}
+
+function updateThemeSelectOptions() {
+  if (!themeSelectEl) {
+    return;
+  }
+  Array.from(themeSelectEl.options).forEach((option) => {
+    if (option.value === "classic") {
+      option.disabled = false;
+      return;
+    }
+    option.disabled = !inventoryState.ownedThemes.includes(option.value);
+  });
 }
 
 function changeTheme(themeKey) {
@@ -632,14 +1139,59 @@ function persistTheme(themeKey) {
   }
 }
 
-const ACTION_ANIMATION_MAP = {
-  feed: "jump",
-  clean: "shake",
-  play: "jump",
-  sleep: "jump",
-};
+function applyEquippedAccessories() {
+  if (accessoryHeadEl) {
+    accessoryHeadEl.className = "pet__accessory pet__accessory--head";
+    const equippedHead = inventoryState.equipped.head;
+    if (equippedHead && ACCESSORY_CLASS_MAP.head[equippedHead]) {
+      accessoryHeadEl.classList.add(ACCESSORY_CLASS_MAP.head[equippedHead]);
+    }
+  }
+  if (accessoryBackgroundEl) {
+    accessoryBackgroundEl.className = "pet__background";
+    const equippedBg = inventoryState.equipped.background;
+    if (equippedBg && ACCESSORY_CLASS_MAP.background[equippedBg]) {
+      accessoryBackgroundEl.classList.add(ACCESSORY_CLASS_MAP.background[equippedBg]);
+    }
+  }
+}
 
-let toastTimerId = 0;
+function equipAccessory(item) {
+  if (item.type !== "accessory" || !item.slot) {
+    return;
+  }
+  if (!inventoryState.ownedAccessories.includes(item.id)) {
+    return;
+  }
+  inventoryState.equipped[item.slot] = item.id;
+  persistInventory();
+  applyEquippedAccessories();
+  renderAccessorySlots();
+  renderShopItems();
+  showToastMessage({
+    title: `${item.name} 착용!`,
+    description: "캐릭터에 적용되었어요.",
+    autoHide: true,
+    duration: 2000,
+  });
+}
+
+function unequipAccessory(slot) {
+  if (!slot || !inventoryState.equipped[slot]) {
+    return;
+  }
+  inventoryState.equipped[slot] = null;
+  persistInventory();
+  applyEquippedAccessories();
+  renderAccessorySlots();
+  renderShopItems();
+  showToastMessage({
+    title: "장착 해제",
+    description: "액세서리를 해제했어요.",
+    autoHide: true,
+    duration: 1600,
+  });
+}
 
 /**
  * 행동별 피드백 연출 실행
@@ -873,8 +1425,12 @@ function showToastMessage(config) {
     return;
   }
   window.clearTimeout(toastTimerId);
+  const normalizedConfig =
+    typeof config === "string"
+      ? { title: config, description: undefined, actions: [], autoHide: true, duration: 2000 }
+      : config;
 
-  const { title, description, actions = [], autoHide = true, duration = 2000 } = config;
+  const { title, description, actions = [], autoHide = true, duration = 2000 } = normalizedConfig;
 
   const actionHtml = actions
     .map(
@@ -1168,17 +1724,43 @@ function loadInventory() {
   try {
     const raw = window.localStorage.getItem(INVENTORY_STORAGE_KEY);
     if (!raw) {
-      return { ownedThemes: ["classic"] };
+      return {
+        ownedThemes: ["classic"],
+        ownedAccessories: [],
+        equipped: { head: null, background: null },
+      };
     }
     const parsed = JSON.parse(raw);
+    const remapAccessory = (id) => {
+      if (typeof id !== "string") {
+        return id;
+      }
+      return LEGACY_ACCESSORY_MAP[id] ?? id;
+    };
+    const normalizedAccessories = Array.isArray(parsed.ownedAccessories)
+      ? [...new Set(parsed.ownedAccessories.map(remapAccessory))]
+      : [];
+    const equippedHead = parsed?.equipped?.head ?? null;
+    const equippedBackgroundRaw = parsed?.equipped?.background ?? null;
+    const equippedBackground =
+      equippedBackgroundRaw !== null ? remapAccessory(equippedBackgroundRaw) : null;
     return {
       ownedThemes: Array.isArray(parsed.ownedThemes)
         ? [...new Set(["classic", ...parsed.ownedThemes])]
         : ["classic"],
+      ownedAccessories: normalizedAccessories,
+      equipped: {
+        head: equippedHead,
+        background: equippedBackground,
+      },
     };
   } catch (error) {
     console.error("[MY_LOG] 인벤토리 불러오기 오류", error);
-    return { ownedThemes: ["classic"] };
+    return {
+      ownedThemes: ["classic"],
+      ownedAccessories: [],
+      equipped: { head: null, background: null },
+    };
   }
 }
 
@@ -1189,4 +1771,729 @@ function persistInventory() {
     console.error("[MY_LOG] 인벤토리 저장 오류", error);
   }
 }
+
+function initializeTabs() {
+  if (!infoTabsEl || infoTabButtons.length === 0 || infoTabPanels.length === 0) {
+    return;
+  }
+  const savedTab = loadActiveTab();
+  activateTab(savedTab);
+  infoTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const targetTab = button.dataset.tab ?? "status";
+      activateTab(targetTab);
+    });
+  });
+}
+
+function activateTab(tabKey) {
+  const normalized = ["status", "shop", "inventory"].includes(tabKey)
+    ? tabKey
+    : "status";
+  infoTabButtons.forEach((button) => {
+    const isActive = button.dataset.tab === normalized;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  infoTabPanels.forEach((panel) => {
+    const isActive = panel.dataset.panel === normalized;
+    panel.classList.toggle("is-active", isActive);
+    if (isActive) {
+      panel.removeAttribute("hidden");
+    } else {
+      panel.setAttribute("hidden", "");
+    }
+  });
+  persistActiveTab(normalized);
+}
+
+function loadActiveTab() {
+  try {
+    const stored = window.localStorage.getItem(TAB_STORAGE_KEY);
+    if (stored && ["status", "shop", "inventory"].includes(stored)) {
+      return stored;
+    }
+  } catch (error) {
+    console.error("[MY_LOG] 탭 불러오기 오류", error);
+  }
+  return "status";
+}
+
+function persistActiveTab(tabKey) {
+  try {
+    window.localStorage.setItem(TAB_STORAGE_KEY, tabKey);
+  } catch (error) {
+    console.error("[MY_LOG] 활성 탭 저장 오류", error);
+  }
+}
+
+function initializeMinigameNavigation() {
+  if (!minigameOverlayEl) {
+    return;
+  }
+  minigameTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.minigameNav;
+      if (key) {
+        activateMinigamePanel(key);
+      }
+    });
+  });
+  activateMinigamePanel(activeMinigameKey);
+}
+
+function activateMinigamePanel(key) {
+  const normalized =
+    key === MINIGAME_TYPES.DODGE ? MINIGAME_TYPES.DODGE : MINIGAME_TYPES.RHYTHM;
+  activeMinigameKey = normalized;
+  minigameTabButtons.forEach((button) => {
+    const isActive = button.dataset.minigameNav === normalized;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  minigamePanels.forEach((panel) => {
+    const isActive = panel.dataset.minigamePanel === normalized;
+    panel.classList.toggle("is-active", isActive);
+    if (isActive) {
+      panel.removeAttribute("hidden");
+    } else {
+      panel.setAttribute("hidden", "");
+    }
+  });
+  updateRhythmUI();
+  updateDodgeUI();
+}
+
+function openMinigame(initialKey) {
+  if (!minigameOverlayEl) {
+    return;
+  }
+  activateMinigamePanel(initialKey ?? activeMinigameKey);
+  resetRhythmGameState();
+  resetDodgeGameState();
+  minigameOverlayEl.classList.add("is-active");
+  minigameOverlayEl.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeMinigame() {
+  if (!minigameOverlayEl) {
+    return;
+  }
+  minigameOverlayEl.classList.remove("is-active");
+  minigameOverlayEl.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+
+function stopActiveMinigame() {
+  if (rhythmGameState.isActive) {
+    endRhythmGame(false, { showMessage: false });
+  }
+  if (dodgeGameState.isActive) {
+    endDodgeGame(false, { showMessage: false });
+  }
+}
+
+function resetRhythmGameState() {
+  rhythmGameState.currentRound = 0;
+  rhythmGameState.hits = 0;
+  rhythmGameState.misses = 0;
+  rhythmGameState.activePad = -1;
+  rhythmGameState.respondWindowId = 0;
+  rhythmGameState.cooldownId = 0;
+  rhythmGameState.allowInput = false;
+  rhythmGameState.isActive = false;
+  stopRhythmTimer();
+  updateRhythmUI();
+}
+
+function updateRhythmUI() {
+  if (minigameRoundEl) {
+    minigameRoundEl.textContent = String(rhythmGameState.currentRound);
+  }
+  if (minigameTotalEl) {
+    minigameTotalEl.textContent = String(rhythmGameState.totalRounds);
+  }
+  if (minigameHitsEl) {
+    minigameHitsEl.textContent = String(rhythmGameState.hits);
+  }
+  if (minigameMissesEl) {
+    minigameMissesEl.textContent = String(rhythmGameState.misses);
+  }
+  if (minigameProgressEl) {
+    const progress = rhythmGameState.totalRounds
+      ? (rhythmGameState.currentRound / rhythmGameState.totalRounds) * 100
+      : 0;
+    minigameProgressEl.style.width = `${progress}%`;
+  }
+  if (minigameStartBtn) {
+    minigameStartBtn.disabled = rhythmGameState.isActive;
+  }
+  if (minigameGiveUpBtn) {
+    minigameGiveUpBtn.disabled = !rhythmGameState.isActive;
+  }
+  if (minigamePadsEl) {
+    const pads = /** @type {NodeListOf<HTMLButtonElement>} */ (
+      minigamePadsEl.querySelectorAll(".minigame__pad")
+    );
+    pads.forEach((pad, index) => {
+      pad.classList.toggle("is-target", index === rhythmGameState.activePad);
+      pad.disabled = !rhythmGameState.isActive;
+    });
+  }
+}
+
+function clearRhythmTimers() {
+  window.clearTimeout(rhythmGameState.respondWindowId);
+  window.clearTimeout(rhythmGameState.cooldownId);
+  rhythmGameState.respondWindowId = 0;
+  rhythmGameState.cooldownId = 0;
+  rhythmGameState.allowInput = false;
+  stopRhythmTimer();
+}
+
+function startRhythmGame() {
+  if (rhythmGameState.isActive) {
+    return;
+  }
+  rhythmGameState.isActive = true;
+  rhythmGameState.currentRound = 0;
+  rhythmGameState.hits = 0;
+  rhythmGameState.misses = 0;
+  rhythmGameState.activePad = -1;
+  rhythmGameState.allowInput = false;
+  updateRhythmUI();
+  scheduleNextRhythmRound();
+}
+
+function scheduleNextRhythmRound() {
+  if (!rhythmGameState.isActive) {
+    return;
+  }
+  if (rhythmGameState.currentRound >= rhythmGameState.totalRounds) {
+    endRhythmGame(true);
+    return;
+  }
+  rhythmGameState.currentRound += 1;
+  rhythmGameState.allowInput = true;
+  const pads = /** @type {NodeListOf<HTMLButtonElement>} */ (
+    minigamePadsEl?.querySelectorAll(".minigame__pad") ?? []
+  );
+  const targetIndex = Math.floor(Math.random() * Math.max(pads.length, 1));
+  rhythmGameState.activePad = targetIndex;
+  pads.forEach((pad, index) => {
+    pad.disabled = false;
+    pad.classList.toggle("is-target", index === targetIndex);
+    pad.classList.remove("is-miss");
+  });
+  updateRhythmUI();
+  const baseWindow = 1300;
+  const difficultyStep = 160;
+  const reactionWindowMs = Math.max(
+    300,
+    baseWindow - Math.max(0, rhythmGameState.hits) * difficultyStep
+  );
+  startRhythmTimer(reactionWindowMs);
+  rhythmGameState.respondWindowId = window.setTimeout(() => {
+    registerRhythmMiss();
+  }, reactionWindowMs);
+}
+
+function handleRhythmPadInput(padIndex) {
+  if (!rhythmGameState.isActive || !rhythmGameState.allowInput) {
+    return;
+  }
+  const pads = /** @type {NodeListOf<HTMLButtonElement>} */ (
+    minigamePadsEl?.querySelectorAll(".minigame__pad") ?? []
+  );
+  rhythmGameState.allowInput = false;
+  window.clearTimeout(rhythmGameState.respondWindowId);
+  stopRhythmTimer();
+  if (padIndex === rhythmGameState.activePad) {
+    rhythmGameState.hits += 1;
+    pads[padIndex]?.classList.add("is-target");
+    scheduleRhythmCooldown();
+  } else {
+    rhythmGameState.misses += 1;
+    pads[padIndex]?.classList.add("is-miss");
+    registerRhythmMiss(true);
+  }
+  updateRhythmUI();
+}
+
+function registerRhythmMiss(fromInput = false) {
+  const pads = /** @type {NodeListOf<HTMLButtonElement>} */ (
+    minigamePadsEl?.querySelectorAll(".minigame__pad") ?? []
+  );
+  if (!fromInput) {
+    rhythmGameState.misses += 1;
+    const targetPad = pads[rhythmGameState.activePad];
+    targetPad?.classList.add("is-miss");
+  }
+  rhythmGameState.allowInput = false;
+  stopRhythmTimer();
+  updateRhythmUI();
+  scheduleRhythmCooldown();
+}
+
+function scheduleRhythmCooldown() {
+  const pads = /** @type {NodeListOf<HTMLButtonElement>} */ (
+    minigamePadsEl?.querySelectorAll(".minigame__pad") ?? []
+  );
+  rhythmGameState.cooldownId = window.setTimeout(() => {
+    pads.forEach((pad) => {
+      pad.classList.remove("is-target", "is-miss");
+    });
+    rhythmGameState.activePad = -1;
+    stopRhythmTimer();
+    updateRhythmUI();
+    scheduleNextRhythmRound();
+  }, 450);
+}
+
+function startRhythmTimer(durationMs) {
+  if (!minigameTimerFillEl) {
+    return;
+  }
+  stopRhythmTimer();
+  rhythmGameState.timerDuration = durationMs;
+  rhythmGameState.timerStart = performance.now();
+  const update = (now) => {
+    const elapsed = now - rhythmGameState.timerStart;
+    const remaining = Math.max(0, rhythmGameState.timerDuration - elapsed);
+    const ratio = rhythmGameState.timerDuration
+      ? remaining / rhythmGameState.timerDuration
+      : 0;
+    minigameTimerFillEl.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+    if (minigameTimerTextEl) {
+      minigameTimerTextEl.textContent = `${(remaining / 1000).toFixed(1)}s`;
+    }
+    if (remaining > 0 && rhythmGameState.allowInput) {
+      rhythmGameState.timerFrameId = window.requestAnimationFrame(update);
+    } else {
+      stopRhythmTimer(false);
+    }
+  };
+  minigameTimerFillEl.style.width = "100%";
+  if (minigameTimerTextEl) {
+    minigameTimerTextEl.textContent = `${(durationMs / 1000).toFixed(1)}s`;
+  }
+  rhythmGameState.timerFrameId = window.requestAnimationFrame(update);
+}
+
+function stopRhythmTimer(resetText = true) {
+  window.cancelAnimationFrame(rhythmGameState.timerFrameId);
+  rhythmGameState.timerFrameId = 0;
+  rhythmGameState.timerDuration = 0;
+  if (minigameTimerFillEl) {
+    minigameTimerFillEl.style.width = "0%";
+  }
+  if (minigameTimerTextEl && resetText) {
+    minigameTimerTextEl.textContent = "0.0s";
+  }
+}
+
+function endRhythmGame(completed, options = {}) {
+  clearRhythmTimers();
+  rhythmGameState.isActive = false;
+  updateRhythmUI();
+  const { showMessage = true } = options;
+  if (!completed) {
+    if (showMessage) {
+      showToastMessage("미니게임을 중단했어요.");
+    }
+    return;
+  }
+  const performanceRatio = rhythmGameState.totalRounds
+    ? rhythmGameState.hits / rhythmGameState.totalRounds
+    : 0;
+  finalizePlayMinigameOutcome("패드 리듬", performanceRatio, true);
+  closeMinigame();
+}
+
+function resetDodgeGameState() {
+  cleanupDodgeGame();
+  dodgeGameState.isActive = false;
+  dodgeGameState.lives = DODGE_CONFIG.maxLives;
+  dodgeGameState.timeRemaining = DODGE_CONFIG.timeLimit;
+  dodgeGameState.elapsed = 0;
+  dodgeGameState.inputDirection = 0;
+  dodgeGameState.lastTimestamp = 0;
+  dodgeGameState.spawnAccumulator = 0;
+  dodgeGameState.playerX = 0.5;
+  dodgeGameState.playerVelocity = 0;
+  dodgeGameState.startTimestamp = 0;
+  dodgeGameState.keyDirections.clear();
+  clearDodgeSpawnTimeouts();
+  dodgeGameState.spawnTimeouts = [];
+  dodgeGameState.gameAreaWidth = 0;
+  dodgeGameState.gameAreaHeight = 0;
+  dodgeGameState.playerWidth = 56;
+  dodgeGameState.playerHeight = 56;
+  updateDodgeUI();
+}
+
+function updateDodgeUI() {
+  if (dodgeTimeEl) {
+    dodgeTimeEl.textContent = `${dodgeGameState.timeRemaining.toFixed(1)}s`;
+  }
+  if (dodgeLivesEl) {
+    const hearts =
+      "♥".repeat(dodgeGameState.lives) +
+      "♡".repeat(Math.max(0, DODGE_CONFIG.maxLives - dodgeGameState.lives));
+    dodgeLivesEl.textContent = hearts;
+  }
+  if (dodgeStartBtn) {
+    dodgeStartBtn.disabled = dodgeGameState.isActive;
+  }
+  if (dodgeGiveUpBtn) {
+    dodgeGiveUpBtn.disabled = !dodgeGameState.isActive;
+  }
+  if (dodgeControlLeftBtn && dodgeControlRightBtn) {
+    dodgeControlLeftBtn.disabled = !dodgeGameState.isActive;
+    dodgeControlRightBtn.disabled = !dodgeGameState.isActive;
+  }
+}
+
+function clearDodgeSpawnTimeouts() {
+  dodgeGameState.spawnTimeouts.forEach((timeoutId) => window.clearTimeout(timeoutId));
+  dodgeGameState.spawnTimeouts = [];
+}
+
+function startDodgeGame() {
+  if (dodgeGameState.isActive || !dodgeGameAreaEl || !dodgePlayerEl) {
+    return;
+  }
+  resetDodgeGameState();
+  dodgeGameState.isActive = true;
+  dodgeGameState.startTimestamp = performance.now();
+  dodgeGameState.lastTimestamp = dodgeGameState.startTimestamp;
+  dodgeGameState.gameAreaWidth = dodgeGameAreaEl.clientWidth;
+  dodgeGameState.gameAreaHeight = dodgeGameAreaEl.clientHeight;
+  dodgeGameState.playerWidth = dodgePlayerEl.offsetWidth || 56;
+  dodgeGameState.playerHeight = dodgePlayerEl.offsetHeight || 56;
+  dodgeGameState.playerX = 0.5;
+  dodgePlayerEl.style.left = "50%";
+  dodgeGameState.droplets = [];
+  dodgeGameState.spawnAccumulator = 0;
+  updateDodgeUI();
+  window.addEventListener("keydown", handleDodgeKeyDown);
+  window.addEventListener("keyup", handleDodgeKeyUp);
+  dodgeGameState.animationFrameId = window.requestAnimationFrame(dodgeGameLoop);
+}
+
+function handleDodgeKeyDown(event) {
+  if (!dodgeGameState.isActive) {
+    return;
+  }
+  if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A") {
+    dodgeGameState.keyDirections.add("left");
+    setDodgeInputDirection(-1);
+    event.preventDefault();
+  } else if (
+    event.key === "ArrowRight" ||
+    event.key === "d" ||
+    event.key === "D"
+  ) {
+    dodgeGameState.keyDirections.add("right");
+    setDodgeInputDirection(1);
+    event.preventDefault();
+  }
+}
+
+function handleDodgeKeyUp(event) {
+  if (!dodgeGameState.isActive) {
+    return;
+  }
+  if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A") {
+    dodgeGameState.keyDirections.delete("left");
+  }
+  if (event.key === "ArrowRight" || event.key === "d" || event.key === "D") {
+    dodgeGameState.keyDirections.delete("right");
+  }
+  if (dodgeGameState.keyDirections.has("left")) {
+    setDodgeInputDirection(-1);
+  } else if (dodgeGameState.keyDirections.has("right")) {
+    setDodgeInputDirection(1);
+  } else {
+    setDodgeInputDirection(0);
+  }
+}
+
+function setDodgeInputDirection(direction) {
+  dodgeGameState.inputDirection = direction;
+}
+
+function spawnDodgeDropletCluster() {
+  if (!dodgeGameAreaEl) {
+    return;
+  }
+  const capacity = DODGE_CONFIG.maxDroplets - dodgeGameState.droplets.length;
+  if (capacity <= 0) {
+    return;
+  }
+  const desiredCount = Math.floor(
+    randomInRange(DODGE_CONFIG.clusterMin, DODGE_CONFIG.clusterMax + 1)
+  );
+  const spawnCount =
+    capacity < DODGE_CONFIG.clusterMin
+      ? capacity
+      : Math.min(capacity, Math.max(DODGE_CONFIG.clusterMin, desiredCount));
+
+  for (let index = 0; index < spawnCount; index += 1) {
+    const delay = index * DODGE_CONFIG.clusterStagger;
+    const timeoutId = window.setTimeout(() => {
+      if (!dodgeGameState.isActive) {
+        return;
+      }
+      createDodgeDroplet();
+      dodgeGameState.spawnTimeouts = dodgeGameState.spawnTimeouts.filter(
+        (id) => id !== timeoutId
+      );
+    }, delay);
+    dodgeGameState.spawnTimeouts.push(timeoutId);
+  }
+}
+
+function createDodgeDroplet() {
+  if (!dodgeGameAreaEl) {
+    return;
+  }
+  if (dodgeGameState.droplets.length >= DODGE_CONFIG.maxDroplets) {
+    return;
+  }
+  const tentativeWidth = DODGE_CONFIG.dropletSize;
+  const tentativeMaxX = Math.max(dodgeGameState.gameAreaWidth - tentativeWidth, 0);
+  const x = Math.random() * Math.max(tentativeMaxX, 1);
+  const droplet = document.createElement("div");
+  droplet.className = "dodge-game__droplet";
+  droplet.style.setProperty("--dodge-tilt", `${randomInRange(-6, 6)}deg`);
+  droplet.style.left = `${x}px`;
+  dodgeGameAreaEl.appendChild(droplet);
+  const dropletWidth = droplet.offsetWidth || DODGE_CONFIG.dropletSize;
+  const dropletHeight = droplet.offsetHeight || DODGE_CONFIG.dropletSize;
+  const adjustedX = Math.min(
+    Math.max(0, x),
+    Math.max(0, dodgeGameState.gameAreaWidth - dropletWidth)
+  );
+  droplet.style.left = `${adjustedX}px`;
+  dodgeGameState.droplets.push({
+    el: droplet,
+    x: adjustedX,
+    y: -dropletHeight,
+    speed: DODGE_CONFIG.baseFallSpeed,
+    width: dropletWidth,
+    height: dropletHeight,
+  });
+}
+
+function playDodgeHitEffect(element) {
+  element.classList.add("is-hit");
+  window.setTimeout(() => element.remove(), 220);
+}
+
+function playDodgeMissEffect(element) {
+  element.classList.add("is-missed");
+  window.setTimeout(() => element.remove(), 320);
+}
+
+function dodgeGameLoop(timestamp) {
+  if (!dodgeGameState.isActive || !dodgeGameAreaEl || !dodgePlayerEl) {
+    return;
+  }
+  const delta = Math.min((timestamp - dodgeGameState.lastTimestamp) / 1000, 0.05);
+  dodgeGameState.lastTimestamp = timestamp;
+  dodgeGameState.elapsed = (timestamp - dodgeGameState.startTimestamp) / 1000;
+  dodgeGameState.timeRemaining = Math.max(
+    0,
+    DODGE_CONFIG.timeLimit - dodgeGameState.elapsed
+  );
+
+  const playerMargin =
+    (dodgeGameState.playerWidth / 2) / Math.max(dodgeGameState.gameAreaWidth, 1);
+  const movement =
+    dodgeGameState.inputDirection *
+    DODGE_CONFIG.playerSpeed *
+    delta /
+    Math.max(dodgeGameState.gameAreaWidth, 1);
+  dodgeGameState.playerX = clamp(
+    dodgeGameState.playerX + movement,
+    playerMargin,
+    1 - playerMargin
+  );
+  dodgePlayerEl.style.left = `${(dodgeGameState.playerX * 100).toFixed(2)}%`;
+
+  const elapsedSeconds = dodgeGameState.elapsed;
+  const spawnInterval = Math.max(
+    DODGE_CONFIG.minSpawnInterval,
+    DODGE_CONFIG.baseSpawnInterval - elapsedSeconds * DODGE_CONFIG.spawnAcceleration
+  );
+  dodgeGameState.spawnAccumulator += delta;
+  if (dodgeGameState.spawnAccumulator >= spawnInterval) {
+    spawnDodgeDropletCluster();
+    dodgeGameState.spawnAccumulator = 0;
+  }
+
+  const baseFall = DODGE_CONFIG.baseFallSpeed;
+  const fallSpeed =
+    baseFall + elapsedSeconds * DODGE_CONFIG.fallAcceleration;
+
+  const playerCenterX = dodgeGameState.playerX * dodgeGameState.gameAreaWidth;
+  const playerLeft = playerCenterX - dodgeGameState.playerWidth / 2;
+  const playerRight = playerCenterX + dodgeGameState.playerWidth / 2;
+  const playerBottom = dodgeGameState.gameAreaHeight - 12;
+  const playerTop = playerBottom - (dodgeGameState.playerHeight ?? 56);
+
+  dodgeGameState.droplets.forEach((droplet) => {
+    droplet.y += fallSpeed * delta;
+    droplet.el.style.top = `${droplet.y}px`;
+  });
+
+  dodgeGameState.droplets = dodgeGameState.droplets.filter((droplet) => {
+    const dropletBottom = droplet.y + droplet.height;
+    if (
+      dropletBottom >= playerTop &&
+      droplet.y <= playerBottom &&
+      droplet.x + droplet.width >= playerLeft &&
+      droplet.x <= playerRight
+    ) {
+      playDodgeHitEffect(droplet.el);
+      dodgeGameState.lives = Math.max(0, dodgeGameState.lives - 1);
+      if (dodgeGameState.lives <= 0) {
+        updateDodgeUI();
+        endDodgeGame(false, { reason: "hit" });
+        return false;
+      }
+      updateDodgeUI();
+      return false;
+    }
+    if (droplet.y > dodgeGameState.gameAreaHeight) {
+      playDodgeMissEffect(droplet.el);
+      return false;
+    }
+    return true;
+  });
+
+  updateDodgeUI();
+
+  if (dodgeGameState.timeRemaining <= 0) {
+    endDodgeGame(true);
+    return;
+  }
+
+  dodgeGameState.animationFrameId = window.requestAnimationFrame(dodgeGameLoop);
+}
+
+function endDodgeGame(success, options = {}) {
+  const { showMessage = true } = options;
+  if (!dodgeGameState.isActive) {
+    if (showMessage && !success) {
+      showToastMessage("미니게임을 중단했어요.");
+    }
+    return;
+  }
+  dodgeGameState.isActive = false;
+  window.cancelAnimationFrame(dodgeGameState.animationFrameId);
+  dodgeGameState.animationFrameId = 0;
+  window.removeEventListener("keydown", handleDodgeKeyDown);
+  window.removeEventListener("keyup", handleDodgeKeyUp);
+  setDodgeInputDirection(0);
+  clearDodgeSpawnTimeouts();
+
+  const survivalTime = DODGE_CONFIG.timeLimit - dodgeGameState.timeRemaining;
+  const performanceRatio = clamp(survivalTime / DODGE_CONFIG.timeLimit, 0, 1);
+
+  if (!success) {
+    if (showMessage) {
+      showToastMessage("미니게임을 중단했어요.");
+    }
+    finalizePlayMinigameOutcome("똥 피하기", performanceRatio, false);
+    cleanupDodgeGame();
+    closeMinigame();
+    return;
+  }
+
+  finalizePlayMinigameOutcome("똥 피하기", 1, true);
+  cleanupDodgeGame();
+  closeMinigame();
+}
+
+function cleanupDodgeGame() {
+  clearDodgeSpawnTimeouts();
+  dodgeGameState.droplets.forEach((droplet) => {
+    droplet.el.remove();
+  });
+  dodgeGameState.droplets = [];
+  if (dodgePlayerEl) {
+    dodgePlayerEl.style.left = "50%";
+  }
+  updateDodgeUI();
+}
+
+function finalizePlayMinigameOutcome(label, performanceRatio, success) {
+  const ratio = clamp(performanceRatio, 0, 1);
+  PRIMARY_STATS.forEach((key) => {
+    if (key === "fun") {
+      return;
+    }
+    const delta = ACTION_EFFECTS.play[key] ?? 0;
+    petState[key] = clamp(petState[key] + delta);
+  });
+
+  const funBase = success ? 18 : 12;
+  const funReward = clamp(Math.round(funBase + ratio * 16), 0, 32);
+  if (funReward > 0) {
+    petState.fun = clamp(petState.fun + funReward, 0, 100);
+  }
+
+  const coinReward = Math.max(
+    0,
+    Math.round(ratio * 28 + (success ? 12 : 4))
+  );
+  if (coinReward > 0) {
+    petState.coins += coinReward;
+  }
+
+  const baseXp = getActionXpReward("play");
+  const xpMultiplierBase = success ? 0.75 : 0.55;
+  const xpReward = Math.max(
+    1,
+    Math.round(baseXp * (xpMultiplierBase + ratio * (success ? 0.7 : 0.5)))
+  );
+  const experienceResult = xpReward > 0 ? gainExperience(xpReward) : null;
+  const leveledUp = Boolean(experienceResult?.leveledUp);
+
+  persistState();
+  syncUI();
+
+  triggerActionFeedback("play", {
+    xpReward,
+    leveledUp,
+    level: experienceResult?.level ?? petState.level,
+    xp: experienceResult?.xp ?? petState.xp,
+    levelsGained: experienceResult?.levelsGained ?? 0,
+  });
+
+  const toastText = success
+    ? `${label} 성공! 즐거움 +${funReward}, 코인 +${coinReward}`
+    : `${label} 종료! 즐거움 +${funReward}, 코인 +${coinReward}`;
+  const showToastLater = () => showToastMessage(toastText);
+  if (leveledUp) {
+    window.setTimeout(showToastLater, 2600);
+  } else {
+    showToastLater();
+  }
+}
+
+// 초기 실행
+applyThemeClass(currentTheme);
+applyEquippedAccessories();
+syncUI();
+bindEvents();
+initializeThemeSelector();
+initializeMinigameNavigation();
+initializeTabs();
+startDecayLoop();
+initializeRewardSystem();
+startIdleAnimations();
 

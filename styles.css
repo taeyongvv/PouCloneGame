@@ -688,6 +688,70 @@ body {
   animation: pet-breathe 6.2s ease-in-out infinite;
 }
 
+.pet__body--intensity-low {
+  filter: saturate(1);
+  transition: filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pet__body--intensity-medium {
+  filter: saturate(0.85);
+  box-shadow: 0 0 24px rgba(14, 165, 233, 0.18);
+}
+
+.pet__body--intensity-high {
+  filter: saturate(0.68);
+  box-shadow: 0 0 32px rgba(245, 158, 11, 0.22);
+}
+
+.pet__body--intensity-critical {
+  filter: saturate(0.5);
+  box-shadow: 0 0 36px rgba(239, 68, 68, 0.28);
+}
+
+.pet-panel.intensity-critical .pet__shadow {
+  filter: blur(6px);
+  opacity: 0.4;
+}
+
+.pet-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease, background 0.3s ease;
+}
+
+.pet-panel.intensity-high::after {
+  opacity: 0.35;
+  background: rgba(255, 191, 71, 0.15);
+}
+
+.pet-panel.intensity-critical::after {
+  opacity: 0.45;
+  background: rgba(239, 68, 68, 0.18);
+}
+
+.theme--night .pet-panel.intensity-high::after {
+  background: rgba(253, 224, 71, 0.2);
+}
+
+.theme--night .pet-panel.intensity-critical::after {
+  background: rgba(248, 113, 113, 0.26);
+}
+
+.pet-panel.intensity-medium .pet__background {
+  opacity: 0.9;
+  filter: saturate(0.85);
+}
+
+.pet-panel.intensity-high .pet__background,
+.pet-panel.intensity-critical .pet__background {
+  opacity: 1;
+  filter: saturate(0.7) blur(1px);
+}
+
 .pet__body--happy .pet__mouth {
   height: 44px;
   border-radius: 0 0 48px 48px;
@@ -1142,6 +1206,46 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
+}
+
+.minigame__timer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.minigame__timer-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+  overflow: hidden;
+  position: relative;
+}
+
+.minigame__timer-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: linear-gradient(90deg, #38bdf8, #6366f1);
+  transition: width 0.08s linear;
+}
+
+.theme--night .minigame__timer-track {
+  background: rgba(71, 85, 105, 0.5);
+}
+
+.theme--night .minigame__timer-fill {
+  background: linear-gradient(90deg, #22d3ee, #60a5fa);
+}
+
+.minigame__timer-text {
+  min-width: 48px;
+  font-size: 0.9rem;
+  text-align: right;
+  color: var(--text-muted);
 }
 
 .minigame__pad {

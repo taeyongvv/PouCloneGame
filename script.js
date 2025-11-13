@@ -1052,6 +1052,46 @@ function updateExpressionState(average) {
 
   petBodyEl.classList.add(bodyClass);
   petFaceEl.classList.add(faceClass);
+
+  applyIntensityVisuals(average);
+}
+
+function applyIntensityVisuals(average) {
+  const panel = petBodyEl?.closest(".pet-panel");
+  if (!panel || !petBodyEl) {
+    return;
+  }
+  panel.classList.remove(
+    "intensity-low",
+    "intensity-medium",
+    "intensity-high",
+    "intensity-critical"
+  );
+  petBodyEl.classList.remove(
+    "pet__body--intensity-low",
+    "pet__body--intensity-medium",
+    "pet__body--intensity-high",
+    "pet__body--intensity-critical"
+  );
+
+  let intensityClass = "intensity-low";
+  let bodyIntensity = "pet__body--intensity-low";
+  if (average >= 70) {
+    intensityClass = "intensity-low";
+    bodyIntensity = "pet__body--intensity-low";
+  } else if (average >= 55) {
+    intensityClass = "intensity-medium";
+    bodyIntensity = "pet__body--intensity-medium";
+  } else if (average >= 35) {
+    intensityClass = "intensity-high";
+    bodyIntensity = "pet__body--intensity-high";
+  } else {
+    intensityClass = "intensity-critical";
+    bodyIntensity = "pet__body--intensity-critical";
+  }
+
+  panel.classList.add(intensityClass);
+  petBodyEl.classList.add(bodyIntensity);
 }
 
 function initializeThemeSelector() {

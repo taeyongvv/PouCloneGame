@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>웹 POU 프로토타입</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <h1>내 가상 친구 POU</h1>
+      <p class="app__subtitle">간단한 프로토타입 · 상태를 관리하며 친구를 돌봐요</p>
+    </header>
+
+    <section class="pet-panel">
+      <div class="pet">
+        <div class="pet__shadow"></div>
+        <div class="pet__body">
+          <div class="pet__face">
+            <div class="pet__eye pet__eye--left">
+              <div class="pet__pupil"></div>
+              <div class="pet__eye-highlight"></div>
+            </div>
+            <div class="pet__eye pet__eye--right">
+              <div class="pet__pupil"></div>
+              <div class="pet__eye-highlight"></div>
+            </div>
+            <div class="pet__cheek pet__cheek--left"></div>
+            <div class="pet__cheek pet__cheek--right"></div>
+            <div class="pet__mouth">
+              <div class="pet__mouth-inner"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mood" id="moodText">기분 최고!</div>
+    </section>
+
+    <section class="status-panel">
+      <h2>상태</h2>
+      <div class="level-card">
+        <div class="level-card__info">
+          <span class="level-card__label">레벨</span>
+          <span class="level-card__value" id="levelValue">Lv. 1</span>
+        </div>
+        <div class="level-card__xp">
+          <span class="level-card__xp-text" id="xpText">0 / 120 XP</span>
+          <div class="stat__bar stat__bar--xp">
+            <div class="stat__fill stat__fill--xp" id="xpBar"></div>
+          </div>
+        </div>
+        <div class="level-card__meta">
+          <span class="level-card__meta-label">코인</span>
+          <span class="level-card__meta-value" id="coinValue">0</span>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="stat__label">배고픔</span>
+        <div class="stat__bar">
+          <div class="stat__fill stat__fill--hunger" id="hungerBar"></div>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="stat__label">청결</span>
+        <div class="stat__bar">
+          <div class="stat__fill stat__fill--cleanliness" id="cleanlinessBar"></div>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="stat__label">에너지</span>
+        <div class="stat__bar">
+          <div class="stat__fill stat__fill--energy" id="energyBar"></div>
+        </div>
+      </div>
+      <div class="stat">
+        <span class="stat__label">즐거움</span>
+        <div class="stat__bar">
+          <div class="stat__fill stat__fill--fun" id="funBar"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="action-panel" aria-label="행동 선택">
+      <h2>행동</h2>
+      <div class="action-panel__grid">
+        <button type="button" class="action-button" data-action="feed">먹이 주기</button>
+        <button type="button" class="action-button" data-action="clean">씻기기</button>
+        <button type="button" class="action-button" data-action="play">놀아주기</button>
+        <button type="button" class="action-button" data-action="sleep">재우기</button>
+        <button type="button" class="action-button action-button--secondary" data-action="reset">초기화</button>
+      </div>
+    </section>
+
+    <footer class="app__footer">
+      <p>간단한 웹 프로토타입 · 저장은 로컬 브라우저에 보관됩니다.</p>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+

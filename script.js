@@ -23,6 +23,12 @@
 
 // 주요 상태 키 상수 정의
 const PRIMARY_STATS = /** @type {const} */ (["hunger", "cleanliness", "energy", "fun"]);
+const THEME_STORAGE_KEY = "webPouPrototypeTheme";
+const THEME_CLASS_MAP = /** @type {const} */ ({
+  classic: "",
+  night: "theme--night",
+  cotton: "theme--cotton",
+});
 const EXPRESSION_BODY_CLASSES = /** @type {const} */ ([
   "pet__body--happy",
   "pet__body--neutral",
@@ -99,6 +105,7 @@ const XP_CONFIG = Object.freeze({
 
 /** @type {PetState} */
 let petState = loadState();
+let currentTheme = loadTheme();
 
 const barElements = {
   hunger: /** @type {HTMLDivElement} */ (document.getElementById("hungerBar")),
@@ -112,7 +119,9 @@ const actionButtons = document.querySelectorAll(".action-button");
 const xpBarEl = /** @type {HTMLDivElement} */ (document.getElementById("xpBar"));
 const levelValueEl = /** @type {HTMLSpanElement} */ (document.getElementById("levelValue"));
 const xpTextEl = /** @type {HTMLSpanElement} */ (document.getElementById("xpText"));
-const coinValueEl = /** @type {HTMLSpanElement} */ (document.getElementById("coinValue"));
+const themeSelectEl = /** @type {HTMLSelectElement | null} */ (
+  document.getElementById("themeSelect")
+);
 const petFaceEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__face"));
 const petBodyEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__body"));
 const levelCardEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".level-card"));
@@ -202,8 +211,10 @@ let blinkTimerId = 0;
 let isBlinking = false;
 
 // UI 초기화
+applyThemeClass(currentTheme);
 syncUI();
 bindEvents();
+initializeThemeSelector();
 startDecayLoop();
 initializeRewardSystem();
 startIdleAnimations();
@@ -425,6 +436,65 @@ function updateExpressionState(average) {
 
   petBodyEl.classList.add(bodyClass);
   petFaceEl.classList.add(faceClass);
+}
+
+function initializeThemeSelector() {
+  if (themeSelectEl) {
+    themeSelectEl.value = currentTheme;
+    themeSelectEl.addEventListener("change", (event) => {
+      const target = /** @type {HTMLSelectElement} */ (event.target);
+      changeTheme(target.value);
+    });
+  }
+}
+
+function changeTheme(themeKey) {
+  const normalized = THEME_CLASS_MAP[themeKey] !== undefined ? themeKey : "classic";
+  if (normalized === currentTheme) {
+    if (themeSelectEl && themeSelectEl.value !== normalized) {
+      themeSelectEl.value = normalized;
+    }
+    return;
+  }
+  currentTheme = normalized;
+  applyThemeClass(currentTheme);
+  persistTheme(currentTheme);
+}
+
+function applyThemeClass(themeKey) {
+  const className = THEME_CLASS_MAP[themeKey] !== undefined ? THEME_CLASS_MAP[themeKey] : "";
+  const bodyEl = document.body;
+  Object.values(THEME_CLASS_MAP).forEach((value) => {
+    if (value) {
+      bodyEl.classList.remove(value);
+    }
+  });
+  if (className) {
+    bodyEl.classList.add(className);
+  }
+  if (themeSelectEl && themeSelectEl.value !== themeKey) {
+    themeSelectEl.value = themeKey;
+  }
+}
+
+function loadTheme() {
+  try {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored && THEME_CLASS_MAP[stored] !== undefined) {
+      return stored;
+    }
+  } catch (error) {
+    console.error("[MY_LOG] 테마 불러오기 오류", error);
+  }
+  return "classic";
+}
+
+function persistTheme(themeKey) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, themeKey);
+  } catch (error) {
+    console.error("[MY_LOG] 테마 저장 오류", error);
+  }
 }
 
 const ACTION_ANIMATION_MAP = {

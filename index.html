@@ -9,8 +9,20 @@
 <body>
   <main class="app">
     <header class="app__header">
-      <h1>내 가상 친구 POU</h1>
-      <p class="app__subtitle">간단한 프로토타입 · 상태를 관리하며 친구를 돌봐요</p>
+      <div class="app__title-group">
+        <div>
+          <h1>내 가상 친구 POU</h1>
+          <p class="app__subtitle">간단한 프로토타입 · 상태를 관리하며 친구를 돌봐요</p>
+        </div>
+        <div class="theme-switcher" aria-label="테마 선택">
+          <label for="themeSelect">테마</label>
+          <select id="themeSelect">
+            <option value="classic">클래식</option>
+            <option value="night">야간</option>
+            <option value="cotton">코튼캔디</option>
+          </select>
+        </div>
+      </div>
     </header>
 
     <section class="pet-panel">

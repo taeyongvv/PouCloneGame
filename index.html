@@ -18,8 +18,8 @@
           <label for="themeSelect">테마</label>
           <select id="themeSelect">
             <option value="classic">클래식</option>
-            <option value="night">야간</option>
-            <option value="cotton">코튼캔디</option>
+            <option value="night" disabled>야간</option>
+            <option value="cotton" disabled>코튼캔디</option>
           </select>
         </div>
       </div>
@@ -91,6 +91,14 @@
           <div class="stat__fill stat__fill--fun" id="funBar"></div>
         </div>
       </div>
+    </section>
+
+    <section class="shop-panel">
+      <div class="shop-panel__header">
+        <h2>상점</h2>
+        <span class="shop-panel__coins">보유 코인 <strong id="shopCoins">0</strong></span>
+      </div>
+      <div class="shop-panel__list" id="shopList" aria-live="polite"></div>
     </section>
 
     <section class="action-panel" aria-label="행동 선택">

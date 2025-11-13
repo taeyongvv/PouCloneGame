@@ -158,7 +158,8 @@ body {
 
 .pet-panel,
 .status-panel,
-.action-panel {
+.action-panel,
+.shop-panel {
   padding: 20px;
   border-radius: 16px;
   background: var(--card);
@@ -166,6 +167,87 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.shop-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shop-panel__coins {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.shop-panel__coins strong {
+  color: var(--accent);
+}
+
+.shop-panel__list {
+  display: grid;
+  gap: 12px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+}
+
+.theme--night .shop-item {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.theme--cotton .shop-item {
+  background: rgba(255, 241, 248, 0.8);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.shop-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shop-item__name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.shop-item__price {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.shop-item__price strong {
+  color: var(--accent);
+}
+
+.shop-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-item__status {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.shop-item__actions .action-button {
+  padding: 8px 14px;
+  font-size: 0.9rem;
 }
 
 .pet {

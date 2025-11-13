@@ -24,11 +24,16 @@
 // 주요 상태 키 상수 정의
 const PRIMARY_STATS = /** @type {const} */ (["hunger", "cleanliness", "energy", "fun"]);
 const THEME_STORAGE_KEY = "webPouPrototypeTheme";
+const INVENTORY_STORAGE_KEY = "webPouInventoryState";
 const THEME_CLASS_MAP = /** @type {const} */ ({
   classic: "",
   night: "theme--night",
   cotton: "theme--cotton",
 });
+const SHOP_ITEMS = /** @type {const} */ ([
+  { id: "theme-night", type: "theme", name: "야간 테마", price: 180, unlocksTheme: "night" },
+  { id: "theme-cotton", type: "theme", name: "코튼캔디", price: 240, unlocksTheme: "cotton" },
+]);
 const EXPRESSION_BODY_CLASSES = /** @type {const} */ ([
   "pet__body--happy",
   "pet__body--neutral",
@@ -106,6 +111,7 @@ const XP_CONFIG = Object.freeze({
 /** @type {PetState} */
 let petState = loadState();
 let currentTheme = loadTheme();
+let inventoryState = loadInventory();
 
 const barElements = {
   hunger: /** @type {HTMLDivElement} */ (document.getElementById("hungerBar")),
@@ -125,6 +131,8 @@ const coinValueEl = /** @type {HTMLSpanElement | null} */ (
 const themeSelectEl = /** @type {HTMLSelectElement | null} */ (
   document.getElementById("themeSelect")
 );
+const shopListEl = /** @type {HTMLDivElement | null} */ (document.getElementById("shopList"));
+const shopCoinsEl = /** @type {HTMLSpanElement | null} */ (document.getElementById("shopCoins"));
 const petFaceEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__face"));
 const petBodyEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".pet__body"));
 const levelCardEl = /** @type {HTMLDivElement | null} */ (document.querySelector(".level-card"));
@@ -277,6 +285,111 @@ function syncInventoryUI() {
     const coins = Math.max(0, Math.floor(petState.coins));
     coinValueEl.textContent = coins.toLocaleString("ko-KR");
   }
+  if (shopCoinsEl) {
+    shopCoinsEl.textContent = Math.max(0, Math.floor(petState.coins)).toLocaleString("ko-KR");
+  }
+  renderShopItems();
+}
+
+function renderShopItems() {
+  if (!shopListEl) {
+    return;
+  }
+  shopListEl.innerHTML = "";
+  SHOP_ITEMS.forEach((item) => {
+    const isTheme = item.type === "theme";
+    const alreadyOwned = isItemOwned(item);
+    const canAfford = petState.coins >= item.price;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "shop-item";
+
+    const info = document.createElement("div");
+    info.className = "shop-item__info";
+    const title = document.createElement("div");
+    title.className = "shop-item__name";
+    title.textContent = item.name;
+    const price = document.createElement("div");
+    price.className = "shop-item__price";
+    price.innerHTML = `가격 <strong>${item.price.toLocaleString("ko-KR")}</strong>`;
+    info.appendChild(title);
+    info.appendChild(price);
+
+    const actions = document.createElement("div");
+    actions.className = "shop-item__actions";
+
+    if (alreadyOwned) {
+      const status = document.createElement("span");
+      status.className = "shop-item__status";
+      status.textContent = "보유 중";
+      actions.appendChild(status);
+    } else {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "action-button";
+      button.textContent = "구매";
+      button.disabled = !canAfford;
+      if (!canAfford) {
+        button.classList.add("action-button--secondary");
+        button.textContent = "코인 부족";
+      }
+      button.addEventListener("click", () => {
+        handlePurchase(item);
+      });
+      actions.appendChild(button);
+    }
+
+    wrapper.appendChild(info);
+    wrapper.appendChild(actions);
+    shopListEl.appendChild(wrapper);
+  });
+}
+
+function handlePurchase(item) {
+  if (isItemOwned(item)) {
+    return;
+  }
+  if (petState.coins < item.price) {
+    showToastMessage({
+      title: "코인이 부족해요!",
+      description: "레벨업으로 코인을 더 모아보세요.",
+      autoHide: true,
+      duration: 2000,
+    });
+    return;
+  }
+
+  petState.coins = Math.max(0, petState.coins - item.price);
+  if (item.type === "theme" && item.unlocksTheme) {
+    if (!inventoryState.ownedThemes.includes(item.unlocksTheme)) {
+      inventoryState.ownedThemes.push(item.unlocksTheme);
+    }
+    // 테마 옵션이 잠금 해제되었다면 즉시 해당 테마 적용 가능
+    if (themeSelectEl) {
+      const option = themeSelectEl.querySelector(`option[value="${item.unlocksTheme}"]`);
+      if (option) {
+        option.disabled = false;
+      }
+    }
+    showToastMessage({
+      title: `${item.name} 획득!`,
+      description: "테마 선택에서 적용해 보세요.",
+      autoHide: true,
+      duration: 2200,
+    });
+  }
+
+  persistState();
+  persistInventory();
+  syncInventoryUI();
+  syncExperienceUI();
+}
+
+function isItemOwned(item) {
+  if (item.type === "theme" && item.unlocksTheme) {
+    return inventoryState.ownedThemes.includes(item.unlocksTheme);
+  }
+  return false;
 }
 
 /**
@@ -443,6 +556,13 @@ function updateExpressionState(average) {
 
 function initializeThemeSelector() {
   if (themeSelectEl) {
+    Array.from(themeSelectEl.options).forEach((option) => {
+      if (option.value === "classic") {
+        option.disabled = false;
+        return;
+      }
+      option.disabled = !inventoryState.ownedThemes.includes(option.value);
+    });
     themeSelectEl.value = currentTheme;
     themeSelectEl.addEventListener("change", (event) => {
       const target = /** @type {HTMLSelectElement} */ (event.target);
@@ -453,6 +573,18 @@ function initializeThemeSelector() {
 
 function changeTheme(themeKey) {
   const normalized = THEME_CLASS_MAP[themeKey] !== undefined ? themeKey : "classic";
+  if (!inventoryState.ownedThemes.includes(normalized)) {
+    showToastMessage({
+      title: "잠금된 테마",
+      description: "상점에서 잠금 해제 후 사용해 보세요.",
+      autoHide: true,
+      duration: 2000,
+    });
+    if (themeSelectEl) {
+      themeSelectEl.value = currentTheme;
+    }
+    return;
+  }
   if (normalized === currentTheme) {
     if (themeSelectEl && themeSelectEl.value !== normalized) {
       themeSelectEl.value = normalized;
@@ -1029,6 +1161,32 @@ function persistState() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(petState));
   } catch (error) {
     console.error("[MY_LOG] 상태 저장 중 오류", error);
+  }
+}
+
+function loadInventory() {
+  try {
+    const raw = window.localStorage.getItem(INVENTORY_STORAGE_KEY);
+    if (!raw) {
+      return { ownedThemes: ["classic"] };
+    }
+    const parsed = JSON.parse(raw);
+    return {
+      ownedThemes: Array.isArray(parsed.ownedThemes)
+        ? [...new Set(["classic", ...parsed.ownedThemes])]
+        : ["classic"],
+    };
+  } catch (error) {
+    console.error("[MY_LOG] 인벤토리 불러오기 오류", error);
+    return { ownedThemes: ["classic"] };
+  }
+}
+
+function persistInventory() {
+  try {
+    window.localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventoryState));
+  } catch (error) {
+    console.error("[MY_LOG] 인벤토리 저장 오류", error);
   }
 }
 

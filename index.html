@@ -14,6 +14,10 @@
           <h1>내 가상 친구 RACOO</h1>
           <p class="app__subtitle">간단한 프로토타입 · 상태를 관리하며 친구를 돌봐요</p>
         </div>
+        <button type="button" class="pet-name-button" onclick="showPetNameModal()" aria-label="펫 이름 변경">
+          <span class="pet-name-button__icon">✏️</span>
+          <span class="pet-name-button__text">이름 변경</span>
+        </button>
       </div>
       <div class="theme-switcher" aria-label="테마 선택">
         <label for="themeSelect">테마</label>
@@ -31,6 +35,14 @@
         <div class="pet__shadow"></div>
         <div class="pet__body">
           <div class="pet__accessory pet__accessory--head"></div>
+          <!-- 더러움 레이어 (청결도가 낮을 때 표시) -->
+          <div class="pet__dirt"></div>
+          <!-- 씻기기 효과 (비누 거품) -->
+          <div class="pet__bubbles"></div>
+          <!-- 먹이주기 효과 (음식 아이템) -->
+          <div class="pet__food"></div>
+          <!-- 재우기 효과 (Zzz 이모지) -->
+          <div class="pet__zzz">💤</div>
           <div class="pet__face">
             <div class="pet__eye pet__eye--left">
               <div class="pet__pupil"></div>
@@ -56,6 +68,7 @@
         <button type="button" class="info-tabs__button is-active" role="tab" aria-selected="true" data-tab="status">상태</button>
         <button type="button" class="info-tabs__button" role="tab" aria-selected="false" data-tab="shop">상점</button>
         <button type="button" class="info-tabs__button" role="tab" aria-selected="false" data-tab="inventory">장착</button>
+        <button type="button" class="info-tabs__button" role="tab" aria-selected="false" data-tab="stats">통계</button>
       </div>
       <div class="info-tabs__panel is-active" role="tabpanel" data-panel="status">
         <section class="status-panel">
@@ -123,6 +136,13 @@
           <div class="inventory-panel__slots" id="accessorySlots" aria-live="polite"></div>
         </section>
       </div>
+
+      <div class="info-tabs__panel" role="tabpanel" data-panel="stats" hidden>
+        <section class="stats-panel">
+          <h2>통계</h2>
+          <div class="stats-panel__content" id="statsContent" aria-live="polite"></div>
+        </section>
+      </div>
     </section>
 
     <section class="action-panel" aria-label="행동 선택">
@@ -135,6 +155,83 @@
         <button type="button" class="action-button action-button--secondary" data-action="reset">초기화</button>
       </div>
     </section>
+
+    <!-- Admin 툴 모달 -->
+    <div class="admin-modal" id="adminModal" aria-hidden="true" role="dialog" aria-labelledby="adminTitle">
+      <div class="admin-modal__overlay" onclick="closeAdminModal()"></div>
+      <div class="admin-modal__content">
+        <header class="admin-modal__header">
+          <h2 class="admin-modal__title" id="adminTitle">Admin 툴</h2>
+          <button type="button" class="admin-modal__close" onclick="closeAdminModal()" aria-label="닫기">×</button>
+        </header>
+        <div class="admin-modal__body">
+          <div class="admin-section">
+            <h3 class="admin-section__title">펫 이미지 변경</h3>
+            <div class="admin-control">
+              <label for="adminPetImageUrl">이미지 URL</label>
+              <input type="text" id="adminPetImageUrl" class="admin-input" placeholder="https://example.com/pet.png" />
+              <button type="button" class="action-button action-button--secondary" onclick="applyPetImage()">적용</button>
+              <button type="button" class="action-button action-button--secondary" onclick="resetPetImage()">원복</button>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <h3 class="admin-section__title">상태 직접 설정</h3>
+            <div class="admin-control-group">
+              <div class="admin-control">
+                <label for="adminHunger">배고픔</label>
+                <input type="number" id="adminHunger" class="admin-input" min="0" max="100" value="75" />
+              </div>
+              <div class="admin-control">
+                <label for="adminCleanliness">청결</label>
+                <input type="number" id="adminCleanliness" class="admin-input" min="0" max="100" value="75" />
+              </div>
+              <div class="admin-control">
+                <label for="adminEnergy">에너지</label>
+                <input type="number" id="adminEnergy" class="admin-input" min="0" max="100" value="75" />
+              </div>
+              <div class="admin-control">
+                <label for="adminFun">즐거움</label>
+                <input type="number" id="adminFun" class="admin-input" min="0" max="100" value="75" />
+              </div>
+            </div>
+            <button type="button" class="action-button" onclick="applyPetStats()">상태 적용</button>
+            <button type="button" class="action-button action-button--secondary" onclick="setMaxStats()">모두 100으로</button>
+          </div>
+
+          <div class="admin-section">
+            <h3 class="admin-section__title">레벨/코인/XP 설정</h3>
+            <div class="admin-control-group">
+              <div class="admin-control">
+                <label for="adminLevel">레벨</label>
+                <input type="number" id="adminLevel" class="admin-input" min="1" max="99" value="1" />
+              </div>
+              <div class="admin-control">
+                <label for="adminXp">XP</label>
+                <input type="number" id="adminXp" class="admin-input" min="0" value="0" />
+              </div>
+              <div class="admin-control">
+                <label for="adminCoins">코인</label>
+                <input type="number" id="adminCoins" class="admin-input" min="0" value="0" />
+              </div>
+            </div>
+            <button type="button" class="action-button" onclick="applyLevelCoinsXp()">적용</button>
+          </div>
+
+          <div class="admin-section">
+            <h3 class="admin-section__title">아이템/테마 관리</h3>
+            <div class="admin-control-group">
+              <button type="button" class="action-button" onclick="unlockAllItems()">모든 아이템 잠금 해제</button>
+              <button type="button" class="action-button" onclick="unlockAllThemes()">모든 테마 잠금 해제</button>
+              <button type="button" class="action-button action-button--secondary" onclick="resetItemsThemes()">아이템/테마 초기화</button>
+            </div>
+          </div>
+        </div>
+        <footer class="admin-modal__footer">
+          <button type="button" class="action-button action-button--secondary" onclick="closeAdminModal()">닫기</button>
+        </footer>
+      </div>
+    </div>
 
     <section class="minigame-overlay" id="minigameOverlay" aria-hidden="true">
       <div class="minigame">
@@ -207,6 +304,63 @@
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- 펫 이름 변경 모달 -->
+  <div class="pet-name-modal" id="petNameModal" aria-hidden="true" role="dialog" aria-labelledby="petNameTitle">
+    <div class="pet-name-modal__overlay" onclick="closePetNameModal()"></div>
+    <div class="pet-name-modal__content">
+      <header class="pet-name-modal__header">
+        <h2 class="pet-name-modal__title" id="petNameTitle">펫 이름 변경</h2>
+        <button type="button" class="pet-name-modal__close" onclick="closePetNameModal()" aria-label="닫기">×</button>
+      </header>
+      <div class="pet-name-modal__body">
+        <label for="petNameInput" class="pet-name-modal__label">새 이름을 입력해주세요</label>
+        <input
+          type="text"
+          id="petNameInput"
+          class="pet-name-modal__input"
+          placeholder="펫 이름"
+          maxlength="20"
+          aria-label="펫 이름 입력"
+          onkeydown="if(event.key === 'Enter') applyPetNameChange()"
+        />
+        <p class="pet-name-modal__hint">한글, 영문, 숫자만 사용 가능 (최대 20자)</p>
+      </div>
+      <footer class="pet-name-modal__footer">
+        <button type="button" class="action-button action-button--secondary" onclick="closePetNameModal()">취소</button>
+        <button type="button" class="action-button" onclick="applyPetNameChange()">변경</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 출석 보상 모달 -->
+  <div class="attendance-modal" id="attendanceModal" aria-hidden="true" role="dialog" aria-labelledby="attendanceTitle">
+    <div class="attendance-modal__overlay" onclick="closeAttendanceModal()"></div>
+    <div class="attendance-modal__content">
+      <header class="attendance-modal__header">
+        <h2 class="attendance-modal__title" id="attendanceTitle">일일 출석 보상</h2>
+        <button type="button" class="attendance-modal__close" onclick="closeAttendanceModal()" aria-label="닫기">×</button>
+      </header>
+      <div class="attendance-modal__body">
+        <div class="attendance-modal__consecutive" id="attendanceConsecutive">첫 출석</div>
+        <div class="attendance-modal__rewards">
+          <div class="attendance-reward">
+            <span class="attendance-reward__label">코인</span>
+            <span class="attendance-reward__value" id="attendanceCoins">0</span>
+          </div>
+          <div class="attendance-reward">
+            <span class="attendance-reward__label">경험치</span>
+            <span class="attendance-reward__value" id="attendanceXp">0</span>
+          </div>
+        </div>
+        <div class="attendance-modal__bonus" id="attendanceBonus" style="display: none;"></div>
+        <div class="attendance-modal__levelup" id="attendanceLevelUp" style="display: none;"></div>
+      </div>
+      <footer class="attendance-modal__footer">
+        <button type="button" class="action-button" onclick="closeAttendanceModal()">확인</button>
+      </footer>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
